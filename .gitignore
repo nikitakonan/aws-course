@@ -1,0 +1,28 @@
+node_modules
+cdk.out
+
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+*.js
+*.d.ts
+!jest.config.js
+!*.test.js
+
+# Coverage directory
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# CDK context
+cdk.context.json
