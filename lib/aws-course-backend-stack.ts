@@ -27,6 +27,11 @@ export class AwsCourseBackendStack extends cdk.Stack {
     const api = new apigateway.RestApi(this, 'Api', {
       restApiName: 'My API Service',
       description: 'This is my API Gateway',
+      defaultCorsPreflightOptions: {
+        allowOrigins: ['*'],
+        allowMethods: ['GET'],
+        allowHeaders: ['*'],
+      },
     });
 
     const products = api.root.addResource('products');
