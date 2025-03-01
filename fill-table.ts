@@ -1,5 +1,7 @@
 import { DynamoDBClient, PutItemCommand } from '@aws-sdk/client-dynamodb';
 import { v4 as uuidV4 } from 'uuid';
+import { Product } from './model/Product';
+import { marshall } from '@aws-sdk/util-dynamodb';
 
 const client = new DynamoDBClient({
   region: 'us-east-1',
@@ -8,7 +10,7 @@ const client = new DynamoDBClient({
 const productsTableName = 'products';
 const stocksTableName = 'stocks';
 
-const mockProducts = [
+const mockProducts: Product[] = [
   {
     id: uuidV4(),
     title: 'Laptop',
@@ -49,12 +51,7 @@ const fillProductsTable = async () => {
     for (const product of mockProducts) {
       const command = new PutItemCommand({
         TableName: productsTableName,
-        Item: {
-          id: { S: product.id },
-          title: { S: product.title },
-          description: { S: product.description },
-          price: { N: product.price.toString() },
-        },
+        Item: marshall(product),
       });
       await client.send(command);
       console.log('Product added: ', product.id);
