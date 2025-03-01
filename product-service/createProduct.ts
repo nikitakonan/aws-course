@@ -16,11 +16,40 @@ const headers = {
   'Access-Control-Allow-Origin': '*',
 };
 
+const validateProduct = ({ title, description, price }: Partial<Product>) => {
+  const errors: string[] = [];
+
+  if (!title) {
+    errors.push('Title is required');
+  }
+  if (typeof title !== 'string') {
+    errors.push('Title must be a string');
+  }
+  if (typeof description !== 'string') {
+    errors.push('Description must be a string');
+  }
+  if (typeof price !== 'number') {
+    errors.push('Price must be a number');
+  }
+
+  return errors;
+};
+
 export const handler = async (event: APIGatewayEvent) => {
   try {
     const productToCreate: Partial<Product> = JSON.parse(event.body || '{}');
 
-    // TODO validate
+    const errors = validateProduct(productToCreate);
+    if (errors.length > 0) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({
+          message: 'Invalid product data',
+          errors,
+        }),
+      };
+    }
 
     productToCreate.id = randomUUID();
 
