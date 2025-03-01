@@ -4,6 +4,14 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as path from 'node:path';
 
+const PRODUCTS_TABLE_NAME = 'products';
+const STOCKS_TABLE_NAME = 'stocks';
+
+const environment = {
+  PRODUCTS_TABLE_NAME,
+  STOCKS_TABLE_NAME,
+};
+
 export class AwsCourseBackendStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -22,10 +30,10 @@ export class AwsCourseBackendStack extends cdk.Stack {
       resources: [
         `arn:aws:dynamodb:${cdk.Stack.of(this).region}:${
           cdk.Stack.of(this).account
-        }:table/products`,
+        }:table/${PRODUCTS_TABLE_NAME}`,
         `arn:aws:dynamodb:${cdk.Stack.of(this).region}:${
           cdk.Stack.of(this).account
-        }:table/stocks`,
+        }:table/${STOCKS_TABLE_NAME}`,
       ],
     });
 
@@ -35,10 +43,7 @@ export class AwsCourseBackendStack extends cdk.Stack {
         path.join(__dirname, '..', 'product-service')
       ),
       handler: 'getProducts.handler',
-      environment: {
-        PRODUCTS_TABLE_NAME: 'products',
-        STOCKS_TABLE_NAME: 'stocks',
-      },
+      environment,
     });
 
     productsListHandler.addToRolePolicy(dynamoDBPolicy);
@@ -49,6 +54,7 @@ export class AwsCourseBackendStack extends cdk.Stack {
         path.join(__dirname, '..', 'product-service')
       ),
       handler: 'getProductById.handler',
+      environment,
     });
 
     productByIdHandler.addToRolePolicy(dynamoDBPolicy);
