@@ -19,6 +19,8 @@ export const handler = async (
 ): Promise<APIGatewayProxyResult> => {
   const productId = event.pathParameters?.id;
 
+  console.log(event.requestContext.requestId, productId);
+
   try {
     if (!productId) {
       return {

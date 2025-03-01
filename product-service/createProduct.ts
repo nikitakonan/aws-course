@@ -37,6 +37,7 @@ const validateProduct = ({ title, description, price }: Partial<Product>) => {
 
 export const handler = async (event: APIGatewayEvent) => {
   try {
+    console.log(event.requestContext.requestId, event.body);
     const productToCreate: Partial<Product> = JSON.parse(event.body || '{}');
 
     const errors = validateProduct(productToCreate);

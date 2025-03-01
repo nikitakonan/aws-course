@@ -14,6 +14,8 @@ export const handler = async (
   context: Context
 ): Promise<APIGatewayProxyResult> => {
   try {
+    console.log(event.requestContext.requestId, event.pathParameters);
+
     const productsResponse = await dynamo.send(
       new ScanCommand({
         TableName: process.env.PRODUCTS_TABLE_NAME,
