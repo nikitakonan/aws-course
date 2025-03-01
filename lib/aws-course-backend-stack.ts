@@ -8,13 +8,40 @@ export class AwsCourseBackendStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    const dynamoDBPolicy = new cdk.aws_iam.PolicyStatement({
+      effect: cdk.aws_iam.Effect.ALLOW,
+      actions: [
+        'dynamodb:GetItem',
+        'dynamodb:Scan',
+        'dynamodb:Query',
+        'dynamodb:BatchGetItem',
+        'dynamodb:PutItem',
+        'dynamodb:UpdateItem',
+        'dynamodb:DeleteItem',
+      ],
+      resources: [
+        `arn:aws:dynamodb:${cdk.Stack.of(this).region}:${
+          cdk.Stack.of(this).account
+        }:table/products`,
+        `arn:aws:dynamodb:${cdk.Stack.of(this).region}:${
+          cdk.Stack.of(this).account
+        }:table/stocks`,
+      ],
+    });
+
     const productsListHandler = new lambda.Function(this, 'getProductsList', {
       runtime: lambda.Runtime.NODEJS_LATEST,
       code: lambda.Code.fromAsset(
         path.join(__dirname, '..', 'product-service')
       ),
       handler: 'getProducts.handler',
+      environment: {
+        PRODUCTS_TABLE_NAME: 'products',
+        STOCKS_TABLE_NAME: 'stocks',
+      },
     });
+
+    productsListHandler.addToRolePolicy(dynamoDBPolicy);
 
     const productByIdHandler = new lambda.Function(this, 'getProductsById', {
       runtime: lambda.Runtime.NODEJS_LATEST,
@@ -23,6 +50,8 @@ export class AwsCourseBackendStack extends cdk.Stack {
       ),
       handler: 'getProductById.handler',
     });
+
+    productByIdHandler.addToRolePolicy(dynamoDBPolicy);
 
     const api = new apigateway.RestApi(this, 'Api', {
       restApiName: 'My API Service',
