@@ -1,5 +1,9 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
+import {
+  DynamoDBDocumentClient,
+  PutCommand,
+  TransactWriteCommand,
+} from '@aws-sdk/lib-dynamodb';
 import { type APIGatewayEvent } from 'aws-lambda';
 import { CreateProduct } from '../model/CreateProduct';
 import { randomUUID } from 'crypto';
@@ -74,16 +78,22 @@ export const handler = async (event: APIGatewayEvent) => {
       count,
     };
 
-    const productResponse = await dynamo.send(
-      new PutCommand({
-        TableName: process.env.PRODUCTS_TABLE_NAME,
-        Item: product,
-      })
-    );
-    const stockResponse = await dynamo.send(
-      new PutCommand({
-        TableName: process.env.STOCKS_TABLE_NAME,
-        Item: stock,
+    await dynamo.send(
+      new TransactWriteCommand({
+        TransactItems: [
+          {
+            Put: {
+              TableName: process.env.PRODUCTS_TABLE_NAME,
+              Item: product,
+            },
+          },
+          {
+            Put: {
+              TableName: process.env.STOCKS_TABLE_NAME,
+              Item: stock,
+            },
+          },
+        ],
       })
     );
 
