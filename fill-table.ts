@@ -1,6 +1,6 @@
 import { DynamoDBClient, PutItemCommand } from '@aws-sdk/client-dynamodb';
 import { v4 as uuidV4 } from 'uuid';
-import { Product } from './model/Product';
+import { CreateProduct } from './model/CreateProduct';
 import { marshall } from '@aws-sdk/util-dynamodb';
 
 const client = new DynamoDBClient({
@@ -10,24 +10,27 @@ const client = new DynamoDBClient({
 const productsTableName = 'products';
 const stocksTableName = 'stocks';
 
-const mockProducts: Product[] = [
+const mockProducts: CreateProduct[] = [
   {
     id: uuidV4(),
     title: 'Laptop',
     description: 'Powerful laptop for development',
     price: 1299.99,
+    count: 10,
   },
   {
     id: uuidV4(),
     title: 'Smartphone',
     description: 'Latest smartphone model',
     price: 899.99,
+    count: 15,
   },
   {
     id: uuidV4(),
     title: 'Headphones',
     description: 'Wireless noise-canceling headphones',
     price: 199.99,
+    count: 8,
   },
 ];
 
@@ -48,7 +51,8 @@ const mockStocks = [
 
 const fillProductsTable = async () => {
   try {
-    for (const product of mockProducts) {
+    for (const createProduct of mockProducts) {
+      const { count, ...product } = createProduct;
       const command = new PutItemCommand({
         TableName: productsTableName,
         Item: marshall(product),
@@ -63,16 +67,16 @@ const fillProductsTable = async () => {
 
 const fillStocksTable = async () => {
   try {
-    for (const stock of mockStocks) {
+    for (const createProduct of mockProducts) {
       const command = new PutItemCommand({
         TableName: stocksTableName,
         Item: {
-          product_id: { S: stock.productId },
-          count: { N: stock.count.toString() },
+          product_id: { S: createProduct.id },
+          count: { N: createProduct.count.toString() },
         },
       });
       await client.send(command);
-      console.log('Stock added: ', stock.productId);
+      console.log('Stock added: ', createProduct.id);
     }
   } catch (error) {
     console.error('Error filling stocks table:', error);

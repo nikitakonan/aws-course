@@ -1,7 +1,7 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { type APIGatewayEvent } from 'aws-lambda';
-import { Product } from '../model/Product';
+import { CreateProduct } from '../model/CreateProduct';
 import { randomUUID } from 'crypto';
 
 const client = new DynamoDBClient({});
@@ -16,7 +16,12 @@ const headers = {
   'Access-Control-Allow-Origin': '*',
 };
 
-const validateProduct = ({ title, description, price }: Partial<Product>) => {
+const validateProduct = ({
+  title,
+  description,
+  price,
+  count,
+}: Partial<CreateProduct>) => {
   const errors: string[] = [];
 
   if (!title) {
@@ -25,11 +30,18 @@ const validateProduct = ({ title, description, price }: Partial<Product>) => {
   if (typeof title !== 'string') {
     errors.push('Title must be a string');
   }
-  if (typeof description !== 'string') {
+  if (description && typeof description !== 'string') {
     errors.push('Description must be a string');
   }
-  if (typeof price !== 'number') {
+  if (price !== undefined && typeof price !== 'number') {
     errors.push('Price must be a number');
+  }
+  const countNum = Number(count);
+  if (Number.isNaN(countNum)) {
+    errors.push('Count must be a number');
+  }
+  if (countNum < 0) {
+    errors.push('Count must be a positive number');
   }
 
   return errors;
@@ -38,7 +50,9 @@ const validateProduct = ({ title, description, price }: Partial<Product>) => {
 export const handler = async (event: APIGatewayEvent) => {
   try {
     console.log(event.requestContext.requestId, event.body);
-    const productToCreate: Partial<Product> = JSON.parse(event.body || '{}');
+    const productToCreate: Partial<CreateProduct> = JSON.parse(
+      event.body || '{}'
+    );
 
     const errors = validateProduct(productToCreate);
     if (errors.length > 0) {
@@ -54,10 +68,22 @@ export const handler = async (event: APIGatewayEvent) => {
 
     productToCreate.id = randomUUID();
 
-    const response = await dynamo.send(
+    const { count, ...product } = productToCreate;
+    const stock = {
+      product_id: product.id,
+      count,
+    };
+
+    const productResponse = await dynamo.send(
       new PutCommand({
         TableName: process.env.PRODUCTS_TABLE_NAME,
-        Item: productToCreate,
+        Item: product,
+      })
+    );
+    const stockResponse = await dynamo.send(
+      new PutCommand({
+        TableName: process.env.STOCKS_TABLE_NAME,
+        Item: stock,
       })
     );
 
@@ -66,7 +92,7 @@ export const handler = async (event: APIGatewayEvent) => {
       headers,
       body: JSON.stringify({
         message: 'Product created successfully',
-        product: response.Attributes,
+        productId: productToCreate.id,
       }),
     };
   } catch (error) {
