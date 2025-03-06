@@ -3,20 +3,46 @@ import type {
   APIGatewayProxyResult,
   Context,
 } from 'aws-lambda';
-import { mockProducts } from './mockProducts';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, ScanCommand } from '@aws-sdk/lib-dynamodb';
+
+const client = new DynamoDBClient({});
+const dynamo = DynamoDBDocumentClient.from(client);
 
 export const handler = async (
   event: APIGatewayEvent,
   context: Context
 ): Promise<APIGatewayProxyResult> => {
   try {
+    console.log(event.requestContext.requestId, event.pathParameters);
+
+    const productsResponse = await dynamo.send(
+      new ScanCommand({
+        TableName: process.env.PRODUCTS_TABLE_NAME,
+      })
+    );
+    const stocksResponse = await dynamo.send(
+      new ScanCommand({
+        TableName: process.env.STOCKS_TABLE_NAME,
+      })
+    );
+    const products = (productsResponse.Items || []).map((product) => {
+      const stock = (stocksResponse.Items || []).find(
+        (stock) => stock.product_id === product.id
+      );
+      return {
+        ...product,
+        count: stock ? stock.count : 0,
+      };
+    });
+
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
       },
-      body: JSON.stringify(mockProducts),
+      body: JSON.stringify(products),
     };
   } catch (e) {
     return {
