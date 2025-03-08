@@ -1,5 +1,5 @@
 import { type APIGatewayEvent, type APIGatewayProxyResult } from 'aws-lambda';
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 export const handler = async (
@@ -21,9 +21,14 @@ export const handler = async (
       region: process.env.AWS_REGION,
     });
 
-    const command = new GetObjectCommand({
+    const command = new PutObjectCommand({
       Bucket: process.env.BUCKET_NAME,
       Key: key,
+      ContentType: 'text/csv',
+      ContentDisposition: `attachment; filename=${csvFileName}`,
+      Metadata: {
+        'Content-Type': 'text/csv',
+      },
     });
 
     const signedUrl = await getSignedUrl(client, command, {

@@ -3,6 +3,7 @@ import { Construct } from 'constructs';
 import * as lambdaNodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import * as s3notifications from 'aws-cdk-lib/aws-s3-notifications';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as path from 'node:path';
 
@@ -32,7 +33,37 @@ export class ImportServiceStack extends cdk.Stack {
     importProductsHandler.addToRolePolicy(
       new cdk.aws_iam.PolicyStatement({
         effect: cdk.aws_iam.Effect.ALLOW,
-        actions: ['s3:GetObject'],
+        actions: ['s3:PutObject'],
+        resources: [bucket.bucketArn, `${bucket.bucketArn}/*`],
+      })
+    );
+
+    const importFileParser = new lambdaNodejs.NodejsFunction(
+      this,
+      'importFileParser',
+      {
+        runtime: lambda.Runtime.NODEJS_LATEST,
+        code: lambda.Code.fromAsset(path.join(__dirname, '..', 'lambda')),
+        handler: 'importFileParser.handler',
+        environment: {
+          BUCKET_NAME: bucket.bucketRegionalDomainName,
+        },
+      }
+    );
+
+    bucket.addEventNotification(
+      s3.EventType.OBJECT_CREATED,
+      new s3notifications.LambdaDestination(importFileParser),
+      {
+        prefix: 'uploaded/',
+        suffix: '.csv',
+      }
+    );
+
+    importFileParser.addToRolePolicy(
+      new cdk.aws_iam.PolicyStatement({
+        effect: cdk.aws_iam.Effect.ALLOW,
+        actions: ['s3:GetObject', 's3:CopyObject', 's3:DeleteObject'],
         resources: [bucket.bucketArn, `${bucket.bucketArn}/*`],
       })
     );
