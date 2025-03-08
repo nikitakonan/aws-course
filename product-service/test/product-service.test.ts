@@ -1,13 +1,13 @@
 // import * as cdk from 'aws-cdk-lib';
 // import { Template } from 'aws-cdk-lib/assertions';
-// import * as AwsCourceBackend from '../lib/aws-cource-backend-stack';
+// import * as ProductService from '../lib/product-service-stack';
 
 // example test. To run these tests, uncomment this file along with the
-// example resource in lib/aws-cource-backend-stack.ts
+// example resource in lib/product-service-stack.ts
 test('SQS Queue Created', () => {
 //   const app = new cdk.App();
 //     // WHEN
-//   const stack = new AwsCourceBackend.AwsCourceBackendStack(app, 'MyTestStack');
+//   const stack = new ProductService.ProductServiceStack(app, 'MyTestStack');
 //     // THEN
 //   const template = Template.fromStack(stack);
 

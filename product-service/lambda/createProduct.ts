@@ -1,11 +1,10 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
   DynamoDBDocumentClient,
-  PutCommand,
   TransactWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { type APIGatewayEvent } from 'aws-lambda';
-import { CreateProduct } from '../model/CreateProduct';
+import { type CreateProduct } from '../model/CreateProduct';
 import { randomUUID } from 'crypto';
 
 const client = new DynamoDBClient({});

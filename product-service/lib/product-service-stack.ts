@@ -12,7 +12,7 @@ const environment = {
   STOCKS_TABLE_NAME,
 };
 
-export class AwsCourseBackendStack extends cdk.Stack {
+export class ProductServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
@@ -29,10 +29,10 @@ export class AwsCourseBackendStack extends cdk.Stack {
       ],
       resources: [
         `arn:aws:dynamodb:${cdk.Stack.of(this).region}:${
-          cdk.Stack.of(this).account
+            cdk.Stack.of(this).account
         }:table/${PRODUCTS_TABLE_NAME}`,
         `arn:aws:dynamodb:${cdk.Stack.of(this).region}:${
-          cdk.Stack.of(this).account
+            cdk.Stack.of(this).account
         }:table/${STOCKS_TABLE_NAME}`,
       ],
     });
@@ -40,7 +40,7 @@ export class AwsCourseBackendStack extends cdk.Stack {
     const productsListHandler = new lambda.Function(this, 'getProductsList', {
       runtime: lambda.Runtime.NODEJS_LATEST,
       code: lambda.Code.fromAsset(
-        path.join(__dirname, '..', 'product-service')
+          path.join(__dirname, '..', 'lambda')
       ),
       handler: 'getProducts.handler',
       environment,
@@ -51,7 +51,7 @@ export class AwsCourseBackendStack extends cdk.Stack {
     const productByIdHandler = new lambda.Function(this, 'getProductsById', {
       runtime: lambda.Runtime.NODEJS_LATEST,
       code: lambda.Code.fromAsset(
-        path.join(__dirname, '..', 'product-service')
+          path.join(__dirname, '..', 'lambda')
       ),
       handler: 'getProductById.handler',
       environment,
@@ -62,7 +62,7 @@ export class AwsCourseBackendStack extends cdk.Stack {
     const createProductHandler = new lambda.Function(this, 'createProduct', {
       runtime: lambda.Runtime.NODEJS_LATEST,
       code: lambda.Code.fromAsset(
-        path.join(__dirname, '..', 'product-service')
+          path.join(__dirname, '..', 'lambda')
       ),
       handler: 'createProduct.handler',
       environment,
@@ -82,23 +82,23 @@ export class AwsCourseBackendStack extends cdk.Stack {
 
     const products = api.root.addResource('products');
     products.addMethod(
-      'GET',
-      new apigateway.LambdaIntegration(productsListHandler)
+        'GET',
+        new apigateway.LambdaIntegration(productsListHandler)
     );
     products.addMethod(
-      'POST',
-      new apigateway.LambdaIntegration(createProductHandler),
-      {}
+        'POST',
+        new apigateway.LambdaIntegration(createProductHandler),
+        {}
     );
     const product = products.addResource('{id}');
     product.addMethod(
-      'GET',
-      new apigateway.LambdaIntegration(productByIdHandler),
-      {
-        requestParameters: {
-          'method.request.path.id': true,
-        },
-      }
+        'GET',
+        new apigateway.LambdaIntegration(productByIdHandler),
+        {
+          requestParameters: {
+            'method.request.path.id': true,
+          },
+        }
     );
 
     new cdk.CfnOutput(this, 'ApiUrl', {

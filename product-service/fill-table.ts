@@ -1,5 +1,5 @@
 import { DynamoDBClient, PutItemCommand } from '@aws-sdk/client-dynamodb';
-import { v4 as uuidV4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { CreateProduct } from './model/CreateProduct';
 import { marshall } from '@aws-sdk/util-dynamodb';
 
@@ -12,21 +12,21 @@ const stocksTableName = 'stocks';
 
 const mockProducts: CreateProduct[] = [
   {
-    id: uuidV4(),
+    id: randomUUID(),
     title: 'Laptop',
     description: 'Powerful laptop for development',
     price: 1299.99,
     count: 10,
   },
   {
-    id: uuidV4(),
+    id: randomUUID(),
     title: 'Smartphone',
     description: 'Latest smartphone model',
     price: 899.99,
     count: 15,
   },
   {
-    id: uuidV4(),
+    id: randomUUID(),
     title: 'Headphones',
     description: 'Wireless noise-canceling headphones',
     price: 199.99,
