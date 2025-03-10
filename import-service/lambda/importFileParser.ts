@@ -1,6 +1,6 @@
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { type S3CreateEvent } from 'aws-lambda';
-import * as csv from 'csv-parser';
+import csv from 'csv-parser';
 import { Readable } from 'stream';
 
 export const handler = async (event: S3CreateEvent) => {
@@ -38,6 +38,8 @@ export const handler = async (event: S3CreateEvent) => {
               reject(error);
             });
         });
+
+        // TODO move to parsed folder
       }
     }
   } catch (error) {

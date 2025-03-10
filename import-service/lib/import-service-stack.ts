@@ -25,7 +25,7 @@ export class ImportServiceStack extends cdk.Stack {
         code: lambda.Code.fromAsset(path.join(__dirname, '..', 'lambda')),
         handler: 'importProductsFile.handler',
         environment: {
-          BUCKET_NAME: bucket.bucketRegionalDomainName,
+          BUCKET_NAME: bucket.bucketName,
         },
       }
     );
@@ -42,11 +42,16 @@ export class ImportServiceStack extends cdk.Stack {
       this,
       'importFileParser',
       {
-        runtime: lambda.Runtime.NODEJS_LATEST,
-        code: lambda.Code.fromAsset(path.join(__dirname, '..', 'lambda')),
-        handler: 'importFileParser.handler',
+        bundling: {
+          nodeModules: ['csv-parser'],
+          minify: true,
+          sourceMap: true,
+        },
+        runtime: lambda.Runtime.NODEJS_22_X,
+        entry: path.join(__dirname, '..', 'lambda', 'importFileParser.ts'),
+        handler: 'handler',
         environment: {
-          BUCKET_NAME: bucket.bucketRegionalDomainName,
+          BUCKET_NAME: bucket.bucketName,
         },
       }
     );

@@ -24,11 +24,6 @@ export const handler = async (
     const command = new PutObjectCommand({
       Bucket: process.env.BUCKET_NAME,
       Key: key,
-      ContentType: 'text/csv',
-      ContentDisposition: `attachment; filename=${csvFileName}`,
-      Metadata: {
-        'Content-Type': 'text/csv',
-      },
     });
 
     const signedUrl = await getSignedUrl(client, command, {
