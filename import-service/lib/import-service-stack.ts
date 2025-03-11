@@ -68,7 +68,12 @@ export class ImportServiceStack extends cdk.Stack {
     importFileParser.addToRolePolicy(
       new cdk.aws_iam.PolicyStatement({
         effect: cdk.aws_iam.Effect.ALLOW,
-        actions: ['s3:GetObject', 's3:CopyObject', 's3:DeleteObject'],
+        actions: [
+          's3:GetObject',
+          's3:CopyObject',
+          's3:PutObject',
+          's3:DeleteObject',
+        ],
         resources: [bucket.bucketArn, `${bucket.bucketArn}/*`],
       })
     );
