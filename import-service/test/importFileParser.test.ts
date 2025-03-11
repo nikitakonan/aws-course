@@ -1,3 +1,5 @@
 describe('importFileParser', () => {
-  it('test 1', () => {});
+  it('test 1', () => {
+    expect(true).toBeTruthy();
+  });
 });

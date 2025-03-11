@@ -17,9 +17,7 @@ export const handler = async (
     }
 
     const key = `uploaded/${csvFileName}`;
-    const client = new S3Client({
-      region: process.env.AWS_REGION,
-    });
+    const client = new S3Client();
 
     const command = new PutObjectCommand({
       Bucket: process.env.BUCKET_NAME,
@@ -38,6 +36,7 @@ export const handler = async (
       body: signedUrl,
     };
   } catch (error) {
+    console.error(error);
     return {
       statusCode: 500,
       body: JSON.stringify({ message: 'Internal Server Error', error }),
