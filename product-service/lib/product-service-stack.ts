@@ -1,7 +1,10 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as lambdaEventSources from 'aws-cdk-lib/aws-lambda-event-sources';
+import * as lambdaNodejs from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as path from 'node:path';
 
 const PRODUCTS_TABLE_NAME = 'products';
@@ -47,6 +50,16 @@ export class ProductServiceStack extends cdk.Stack {
           'method.request.path.id': true,
         },
       }
+    );
+
+    const catalogBatchProcessHandler = this.createCatalogBatchProcessLambda();
+    const catalogItemsQueue = new sqs.Queue(this, 'CatalogItemsQueue', {
+      queueName: 'catalogItemsQueue',
+    });
+    catalogBatchProcessHandler.addEventSource(
+      new lambdaEventSources.SqsEventSource(catalogItemsQueue, {
+        batchSize: 5,
+      })
     );
 
     new cdk.CfnOutput(this, 'ApiUrl', {
@@ -102,6 +115,16 @@ export class ProductServiceStack extends cdk.Stack {
       code: lambda.Code.fromAsset(path.join(__dirname, '..', 'lambda')),
       handler: 'createProduct.handler',
       environment,
+    });
+  }
+
+  createCatalogBatchProcessLambda() {
+    return new lambdaNodejs.NodejsFunction(this, 'catalogBatchProcess', {
+      runtime: lambda.Runtime.NODEJS_22_X,
+      entry: path.join(__dirname, '..', 'lambda', 'catalogBatchProcess.ts'),
+      handler: 'handler',
+      environment,
+      bundling: {},
     });
   }
 
