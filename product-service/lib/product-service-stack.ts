@@ -16,7 +16,47 @@ export class ProductServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const dynamoDBPolicy = new cdk.aws_iam.PolicyStatement({
+    const dynamoDBPolicy = this.createDynamodbPolicy();
+
+    const productsListHandler = this.createProductsListLambda();
+    productsListHandler.addToRolePolicy(dynamoDBPolicy);
+
+    const productByIdHandler = this.createProductByIdLambda();
+    productByIdHandler.addToRolePolicy(dynamoDBPolicy);
+
+    const createProductHandler = this.createProductCreateLambda();
+    createProductHandler.addToRolePolicy(dynamoDBPolicy);
+
+    const api = this.createApiGateway();
+
+    const products = api.root.addResource('products');
+    products.addMethod(
+      'GET',
+      new apigateway.LambdaIntegration(productsListHandler)
+    );
+    products.addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(createProductHandler)
+    );
+    const product = products.addResource('{id}');
+    product.addMethod(
+      'GET',
+      new apigateway.LambdaIntegration(productByIdHandler),
+      {
+        requestParameters: {
+          'method.request.path.id': true,
+        },
+      }
+    );
+
+    new cdk.CfnOutput(this, 'ApiUrl', {
+      value: api.url,
+      description: 'API Gateway endpoint URL',
+    });
+  }
+
+  createDynamodbPolicy() {
+    return new cdk.aws_iam.PolicyStatement({
       effect: cdk.aws_iam.Effect.ALLOW,
       actions: [
         'dynamodb:GetItem',
@@ -29,48 +69,44 @@ export class ProductServiceStack extends cdk.Stack {
       ],
       resources: [
         `arn:aws:dynamodb:${cdk.Stack.of(this).region}:${
-            cdk.Stack.of(this).account
+          cdk.Stack.of(this).account
         }:table/${PRODUCTS_TABLE_NAME}`,
         `arn:aws:dynamodb:${cdk.Stack.of(this).region}:${
-            cdk.Stack.of(this).account
+          cdk.Stack.of(this).account
         }:table/${STOCKS_TABLE_NAME}`,
       ],
     });
+  }
 
-    const productsListHandler = new lambda.Function(this, 'getProductsList', {
+  createProductsListLambda() {
+    return new lambda.Function(this, 'getProductsList', {
       runtime: lambda.Runtime.NODEJS_LATEST,
-      code: lambda.Code.fromAsset(
-          path.join(__dirname, '..', 'lambda')
-      ),
+      code: lambda.Code.fromAsset(path.join(__dirname, '..', 'lambda')),
       handler: 'getProducts.handler',
       environment,
     });
+  }
 
-    productsListHandler.addToRolePolicy(dynamoDBPolicy);
-
-    const productByIdHandler = new lambda.Function(this, 'getProductsById', {
+  createProductByIdLambda() {
+    return new lambda.Function(this, 'getProductsById', {
       runtime: lambda.Runtime.NODEJS_LATEST,
-      code: lambda.Code.fromAsset(
-          path.join(__dirname, '..', 'lambda')
-      ),
+      code: lambda.Code.fromAsset(path.join(__dirname, '..', 'lambda')),
       handler: 'getProductById.handler',
       environment,
     });
+  }
 
-    productByIdHandler.addToRolePolicy(dynamoDBPolicy);
-
-    const createProductHandler = new lambda.Function(this, 'createProduct', {
+  createProductCreateLambda() {
+    return new lambda.Function(this, 'createProduct', {
       runtime: lambda.Runtime.NODEJS_LATEST,
-      code: lambda.Code.fromAsset(
-          path.join(__dirname, '..', 'lambda')
-      ),
+      code: lambda.Code.fromAsset(path.join(__dirname, '..', 'lambda')),
       handler: 'createProduct.handler',
       environment,
     });
+  }
 
-    createProductHandler.addToRolePolicy(dynamoDBPolicy);
-
-    const api = new apigateway.RestApi(this, 'Api', {
+  createApiGateway() {
+    return new apigateway.RestApi(this, 'Api', {
       restApiName: 'My API Service',
       description: 'This is my API Gateway',
       defaultCorsPreflightOptions: {
@@ -78,31 +114,6 @@ export class ProductServiceStack extends cdk.Stack {
         allowMethods: ['GET', 'POST', 'PUT', 'DELETE'],
         allowHeaders: ['*'],
       },
-    });
-
-    const products = api.root.addResource('products');
-    products.addMethod(
-        'GET',
-        new apigateway.LambdaIntegration(productsListHandler)
-    );
-    products.addMethod(
-        'POST',
-        new apigateway.LambdaIntegration(createProductHandler),
-        {}
-    );
-    const product = products.addResource('{id}');
-    product.addMethod(
-        'GET',
-        new apigateway.LambdaIntegration(productByIdHandler),
-        {
-          requestParameters: {
-            'method.request.path.id': true,
-          },
-        }
-    );
-
-    new cdk.CfnOutput(this, 'ApiUrl', {
-      value: api.url,
     });
   }
 }
