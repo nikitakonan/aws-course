@@ -71,7 +71,21 @@ async function sendToQueue(readable: Readable) {
 
   await new Promise((resolve, reject) => {
     readable
-      .pipe(csv())
+      .pipe(
+        csv({
+          mapHeaders: ({ header }) => header.trim().toLowerCase(),
+          mapValues: ({ value, header }) => {
+            if (/price/i.test(header)) {
+              return parseInt(value.trim());
+            }
+            if (/count/i.test(header)) {
+              return parseInt(value.trim());
+            }
+            return value.trim();
+          },
+          strict: true,
+        })
+      )
       .on('data', (data) => {
         console.log('Sending to queue -> ', data);
         sqsClient.send(

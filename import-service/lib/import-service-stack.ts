@@ -51,8 +51,6 @@ export class ImportServiceStack extends cdk.Stack {
       {
         bundling: {
           nodeModules: ['csv-parser'],
-          minify: true,
-          sourceMap: true,
         },
         runtime: lambda.Runtime.NODEJS_22_X,
         entry: path.join(__dirname, '..', 'lambda', 'importFileParser.ts'),
