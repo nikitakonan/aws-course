@@ -3,6 +3,7 @@ import { Construct } from 'constructs';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as lambdaEventSources from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as lambdaNodejs from 'aws-cdk-lib/aws-lambda-nodejs';
+import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as path from 'node:path';
@@ -61,6 +62,18 @@ export class ProductServiceStack extends cdk.Stack {
         batchSize: 5,
       })
     );
+    const productsTable = dynamodb.Table.fromTableName(
+      this,
+      'ProductsTable',
+      PRODUCTS_TABLE_NAME
+    );
+    const stocksTable = dynamodb.Table.fromTableName(
+      this,
+      'StocksTable',
+      STOCKS_TABLE_NAME
+    );
+    productsTable.grantWriteData(catalogBatchProcessHandler);
+    stocksTable.grantWriteData(catalogBatchProcessHandler);
 
     new cdk.CfnOutput(this, 'CatalogItemsQueueArn', {
       value: catalogItemsQueue.queueArn,
