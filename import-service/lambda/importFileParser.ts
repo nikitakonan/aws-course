@@ -1,17 +1,22 @@
 import {
-  GetObjectCommand,
-  S3Client,
   CopyObjectCommand,
   DeleteObjectCommand,
+  GetObjectCommand,
+  S3Client,
 } from '@aws-sdk/client-s3';
 import { type S3CreateEvent } from 'aws-lambda';
 import csv from 'csv-parser';
-import { Readable } from 'stream';
+import { Readable } from 'node:stream';
+import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 
 export const handler = async (event: S3CreateEvent) => {
   try {
     const s3Client = new S3Client();
     const bucket = process.env.BUCKET_NAME;
+
+    if (!bucket) {
+      throw new Error('Bucket name is not set');
+    }
 
     for (const record of event.Records) {
       const key = record.s3.object.key;
@@ -26,9 +31,8 @@ export const handler = async (event: S3CreateEvent) => {
 
       if (response.Body) {
         const readable = Readable.from(response.Body as any);
-        logStream(readable);
-
-        await moveFileToParsed(s3Client, bucket!, key);
+        await sendToQueue(readable);
+        await moveFileToParsed(s3Client, bucket, key);
       }
     }
   } catch (error) {
@@ -62,12 +66,20 @@ async function moveFileToParsed(client: S3Client, bucket: string, key: string) {
   }
 }
 
-async function logStream(readable: Readable) {
+async function sendToQueue(readable: Readable) {
+  const sqsClient = new SQSClient();
+
   await new Promise((resolve, reject) => {
     readable
       .pipe(csv())
       .on('data', (data) => {
-        console.log('CSV data: ', data);
+        console.log('Sending to queue -> ', data);
+        sqsClient.send(
+          new SendMessageCommand({
+            QueueUrl: process.env.SQS_URL,
+            MessageBody: JSON.stringify(data),
+          })
+        );
       })
       .on('end', () => {
         console.log('CSV file successfully processed');

@@ -62,6 +62,12 @@ export class ProductServiceStack extends cdk.Stack {
       })
     );
 
+    new cdk.CfnOutput(this, 'CatalogItemsQueueArn', {
+      value: catalogItemsQueue.queueArn,
+      exportName: 'CatalogItemsQueueArn',
+      description: 'Catalog Items Queue Arn',
+    });
+
     new cdk.CfnOutput(this, 'ApiUrl', {
       value: api.url,
       description: 'API Gateway endpoint URL',

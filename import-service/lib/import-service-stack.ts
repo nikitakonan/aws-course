@@ -5,11 +5,18 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as s3notifications from 'aws-cdk-lib/aws-s3-notifications';
 import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as path from 'node:path';
 
 export class ImportServiceStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
+
+    const catalogItemsQueue = sqs.Queue.fromQueueArn(
+      this,
+      'CatalogItemsQueue',
+      cdk.Fn.importValue('CatalogItemsQueueArn')
+    );
 
     const bucket = s3.Bucket.fromBucketName(
       this,
@@ -52,9 +59,12 @@ export class ImportServiceStack extends cdk.Stack {
         handler: 'handler',
         environment: {
           BUCKET_NAME: bucket.bucketName,
+          SQS_URL: catalogItemsQueue.queueUrl,
         },
       }
     );
+
+    catalogItemsQueue.grantSendMessages(importFileParser);
 
     bucket.addEventNotification(
       s3.EventType.OBJECT_CREATED,
