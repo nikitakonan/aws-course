@@ -1,53 +1,11 @@
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import {
-  DynamoDBDocumentClient,
-  TransactWriteCommand,
-} from '@aws-sdk/lib-dynamodb';
 import { type APIGatewayEvent } from 'aws-lambda';
 import { type CreateProduct } from '../model/CreateProduct';
-import { randomUUID } from 'crypto';
-
-const client = new DynamoDBClient({});
-const dynamo = DynamoDBDocumentClient.from(client, {
-  marshallOptions: {
-    removeUndefinedValues: true,
-  },
-});
+import { validateCreateProduct } from './validateCreateProduct';
+import { createProductInDb } from './createProductInDb';
 
 const headers = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
-};
-
-const validateProduct = ({
-  title,
-  description,
-  price,
-  count,
-}: Partial<CreateProduct>) => {
-  const errors: string[] = [];
-
-  if (!title) {
-    errors.push('Title is required');
-  }
-  if (typeof title !== 'string') {
-    errors.push('Title must be a string');
-  }
-  if (description && typeof description !== 'string') {
-    errors.push('Description must be a string');
-  }
-  if (price !== undefined && typeof price !== 'number') {
-    errors.push('Price must be a number');
-  }
-  const countNum = Number(count);
-  if (Number.isNaN(countNum)) {
-    errors.push('Count must be a number');
-  }
-  if (countNum < 0) {
-    errors.push('Count must be a positive number');
-  }
-
-  return errors;
 };
 
 export const handler = async (event: APIGatewayEvent) => {
@@ -57,7 +15,7 @@ export const handler = async (event: APIGatewayEvent) => {
       event.body || '{}'
     );
 
-    const errors = validateProduct(productToCreate);
+    const errors = validateCreateProduct(productToCreate);
     if (errors.length > 0) {
       return {
         statusCode: 400,
@@ -69,32 +27,7 @@ export const handler = async (event: APIGatewayEvent) => {
       };
     }
 
-    productToCreate.id = randomUUID();
-
-    const { count, ...product } = productToCreate;
-    const stock = {
-      product_id: product.id,
-      count,
-    };
-
-    await dynamo.send(
-      new TransactWriteCommand({
-        TransactItems: [
-          {
-            Put: {
-              TableName: process.env.PRODUCTS_TABLE_NAME,
-              Item: product,
-            },
-          },
-          {
-            Put: {
-              TableName: process.env.STOCKS_TABLE_NAME,
-              Item: stock,
-            },
-          },
-        ],
-      })
-    );
+    await createProductInDb(productToCreate as CreateProduct);
 
     return {
       statusCode: 200,
