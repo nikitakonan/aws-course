@@ -1,19 +1,54 @@
+import { PublishCommand, SNSClient } from '@aws-sdk/client-sns';
 import { type SQSHandler } from 'aws-lambda';
 import { CreateProduct } from '../model/CreateProduct';
-import { validateCreateProduct } from './validateCreateProduct';
 import { createProductInDb } from './createProductInDb';
+import { validateCreateProduct } from './validateCreateProduct';
+import { atob } from 'node:buffer';
 
 export const handler: SQSHandler = async (event) => {
   try {
-    for (const record of event.Records) {
-      const productToCreate = JSON.parse(record.body) as Partial<CreateProduct>;
+    console.log(
+      'catalogBatchProcess handler. Number of records ',
+      event.Records.length
+    );
+    const snsClient = new SNSClient();
+    const promises = event.Records.filter((record) => {
+      return record.messageAttributes?.source?.stringValue === 'import-service';
+    }).map((record) => {
+      console.log('Start batch process ', record.messageId, record.body);
+      console.log('source: ', record.messageAttributes.source.stringValue);
+      console.log('body: ', record.body);
+      const message = atob(record.body);
+      console.log('message: ', message);
+      const productToCreate = JSON.parse(message) as Partial<CreateProduct>;
       const errors = validateCreateProduct(productToCreate);
       if (errors.length > 0) {
-        console.error('Validation failed: ', record.body);
-        // TODO something with this error
+        console.error('Validation failed: ', errors);
+        return null;
       } else {
-        await createProductInDb(productToCreate as CreateProduct);
+        return createProductInDb(productToCreate as CreateProduct);
       }
+    });
+
+    if (promises.length) {
+      const createdProducts = await Promise.all(promises);
+
+      snsClient.send(
+        new PublishCommand({
+          TopicArn: process.env.SNS_TOPIC_ARN,
+          Subject: 'Products created',
+          Message: `Products created successfully - ${createdProducts
+            .filter((p) => !!p)
+            .map((p) => p.title)
+            .join(', ')}`,
+          MessageAttributes: {
+            status: {
+              DataType: 'String',
+              StringValue: 'success',
+            },
+          },
+        })
+      );
     }
   } catch (error) {
     console.error('Error processing batch: ', error);

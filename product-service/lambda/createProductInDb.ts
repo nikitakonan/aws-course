@@ -41,4 +41,6 @@ export const createProductInDb = async (productToCreate: CreateProduct) => {
       ],
     })
   );
+
+  return productToCreate;
 };

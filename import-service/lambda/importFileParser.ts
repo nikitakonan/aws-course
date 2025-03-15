@@ -8,6 +8,7 @@ import { type S3CreateEvent } from 'aws-lambda';
 import csv from 'csv-parser';
 import { Readable } from 'node:stream';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
+import { btoa } from 'node:buffer';
 
 export const handler = async (event: S3CreateEvent) => {
   try {
@@ -87,13 +88,28 @@ async function sendToQueue(readable: Readable) {
         })
       )
       .on('data', (data) => {
-        console.log('Sending to queue -> ', data);
-        sqsClient.send(
-          new SendMessageCommand({
-            QueueUrl: process.env.SQS_URL,
-            MessageBody: JSON.stringify(data),
+        const message = btoa(JSON.stringify(data));
+        console.log(`Sending to queue ->  "${message}"`);
+        sqsClient
+          .send(
+            new SendMessageCommand({
+              QueueUrl: process.env.SQS_URL,
+              MessageBody: message,
+              DelaySeconds: 5,
+              MessageAttributes: {
+                source: {
+                  DataType: 'String',
+                  StringValue: 'import-service',
+                },
+              },
+            })
+          )
+          .then(() => {
+            console.log('Message sent to queue');
           })
-        );
+          .catch((error) => {
+            console.error('Error sending message to queue: ', error);
+          });
       })
       .on('end', () => {
         console.log('CSV file successfully processed');
