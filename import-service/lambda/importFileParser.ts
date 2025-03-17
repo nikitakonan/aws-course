@@ -8,7 +8,6 @@ import { type S3CreateEvent } from 'aws-lambda';
 import csv from 'csv-parser';
 import { Readable } from 'node:stream';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
-import { btoa } from 'node:buffer';
 
 export const handler = async (event: S3CreateEvent) => {
   try {
@@ -88,7 +87,7 @@ async function sendToQueue(readable: Readable) {
         })
       )
       .on('data', (data) => {
-        const message = btoa(JSON.stringify(data));
+        const message = JSON.stringify(data);
         console.log(`Sending to queue ->  "${message}"`);
         sqsClient
           .send(

@@ -5,18 +5,11 @@
     },
     {
       "name": "import-service",
-      "path": "import-service"
+      "path": "./import-service"
     },
     {
       "name": "product-service",
-      "path": "product-service"
+      "path": "./product-service"
     }
-  ],
-  "settings": {
-    "jest.disabledWorkspaceFolders": [
-      "aws-course",
-      "asset.cc23813395a9d9e73447b074d2b05206d6c22cbd7708ce0a4f50b86110455bff",
-      "asset.f7e12de19519b6da4b114cb4c6be6175916fb22ef1c752ad86c6496de9b36526"
-    ]
-  }
+  ]
 }

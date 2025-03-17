@@ -15,10 +15,13 @@ export const handler: SQSHandler = async (event) => {
     const promises = event.Records.filter((record) => {
       return record.messageAttributes?.source?.stringValue === 'import-service';
     }).map((record) => {
-      console.log('Start batch process ', record.messageId, record.body);
-      console.log('source: ', record.messageAttributes.source.stringValue);
-      console.log('body: ', record.body);
-      const message = atob(record.body);
+      console.log(
+        'Start batch process ',
+        record.messageId,
+        ' from ',
+        record.messageAttributes.source?.stringValue
+      );
+      const message = record.body;
       console.log('message: ', message);
       const productToCreate = JSON.parse(message) as Partial<CreateProduct>;
       const errors = validateCreateProduct(productToCreate);
