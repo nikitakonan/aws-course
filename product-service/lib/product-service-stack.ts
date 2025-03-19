@@ -108,6 +108,11 @@ export class ProductServiceStack extends cdk.Stack {
         '/learn-aws-course/sns/email-endpoint'
       ),
       protocol: sns.SubscriptionProtocol.EMAIL,
+      filterPolicy: {
+        status: sns.SubscriptionFilter.stringFilter({
+          allowlist: ['success'],
+        }),
+      },
     });
 
     return createProductTopic;

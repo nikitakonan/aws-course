@@ -3,7 +3,6 @@ import { type SQSHandler } from 'aws-lambda';
 import { CreateProduct } from '../model/CreateProduct';
 import { createProductInDb } from './createProductInDb';
 import { validateCreateProduct } from './validateCreateProduct';
-import { atob } from 'node:buffer';
 
 export const handler: SQSHandler = async (event) => {
   try {
