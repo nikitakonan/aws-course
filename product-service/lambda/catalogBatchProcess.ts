@@ -1,10 +1,10 @@
 import { PublishCommand, SNSClient } from '@aws-sdk/client-sns';
-import { type SQSHandler } from 'aws-lambda';
+import { type SQSEvent } from 'aws-lambda';
 import { CreateProduct } from '../model/CreateProduct';
 import { createProductInDb } from './createProductInDb';
 import { validateCreateProduct } from './validateCreateProduct';
 
-export const handler: SQSHandler = async (event) => {
+export const handler = async (event: SQSEvent) => {
   try {
     console.log(
       'catalogBatchProcess handler. Number of records ',
