@@ -101,6 +101,7 @@ export class ProductServiceStack extends cdk.Stack {
       topicName: 'createProductTopic',
       displayName: 'Create Product Topic',
     });
+
     new sns.Subscription(this, 'emailSubscription', {
       topic: createProductTopic,
       endpoint: ssm.StringParameter.valueForStringParameter(
@@ -111,6 +112,20 @@ export class ProductServiceStack extends cdk.Stack {
       filterPolicy: {
         status: sns.SubscriptionFilter.stringFilter({
           allowlist: ['success'],
+        }),
+      },
+    });
+
+    new sns.Subscription(this, 'failedSubscription', {
+      topic: createProductTopic,
+      endpoint: ssm.StringParameter.valueForStringParameter(
+        this,
+        '/learn-aws-course/sns/failed-endpoint'
+      ),
+      protocol: sns.SubscriptionProtocol.EMAIL,
+      filterPolicy: {
+        status: sns.SubscriptionFilter.stringFilter({
+          denylist: ['success'],
         }),
       },
     });
