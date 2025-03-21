@@ -96,6 +96,12 @@ export class ImportServiceStack extends cdk.Stack {
       },
     });
 
+    const basicAuthorizerHandler = lambda.Function.fromFunctionArn(
+      this,
+      'BasicAuthorizer',
+      cdk.Fn.importValue('BasicAuthorizerArn')
+    );
+
     const importProducts = api.root.addResource('import');
     importProducts.addMethod(
       'GET',
@@ -104,6 +110,14 @@ export class ImportServiceStack extends cdk.Stack {
         requestParameters: {
           'method.request.querystring.name': true,
         },
+        authorizationType: apigateway.AuthorizationType.CUSTOM,
+        authorizer: new apigateway.TokenAuthorizer(
+          this,
+          'BasicTokenAuthorizer',
+          {
+            handler: basicAuthorizerHandler,
+          }
+        ),
       }
     );
 
