@@ -91,10 +91,13 @@ export class ImportServiceStack extends cdk.Stack {
       description: 'This is Import Service API Service Gateway',
     });
 
-    const basicAuthorizerHandler = lambda.Function.fromFunctionArn(
+    const basicAuthorizerHandler = lambda.Function.fromFunctionAttributes(
       this,
       'BasicAuthorizer',
-      cdk.Fn.importValue('BasicAuthorizerArn')
+      {
+        functionArn: cdk.Fn.importValue('BasicAuthorizerArn'),
+        sameEnvironment: true,
+      }
     );
 
     const authorizer = new apigateway.TokenAuthorizer(
