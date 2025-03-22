@@ -1,23 +1,29 @@
 import {
-  type APIGatewayTokenAuthorizerEvent,
-  type AuthResponse,
+  APIGatewayAuthorizerResultContext,
+  type APIGatewayTokenAuthorizerHandler,
 } from 'aws-lambda';
 
-export const handler = async (
-  event: APIGatewayTokenAuthorizerEvent
-): Promise<AuthResponse> => {
+class CustomError extends Error {
+  statusCode: number;
+  constructor(message: string, statusCode: number) {
+    super(message);
+    this.statusCode = statusCode;
+  }
+}
+
+export const handler: APIGatewayTokenAuthorizerHandler = async (event) => {
   try {
     const authHeader = event.authorizationToken;
 
     if (!authHeader) {
-      throw new Error('Unauthorized');
+      throw new CustomError('Unauthorized', 401);
     }
 
     const token = authHeader.replace(/^Basic\s+/, '');
     const auth = Buffer.from(token, 'base64').toString();
 
     if (auth !== process.env.CREDENTIALS) {
-      throw new Error('Access denied');
+      throw new CustomError('Access denied', 403);
     }
 
     return {
@@ -34,6 +40,13 @@ export const handler = async (
       },
     };
   } catch (error) {
+    const context: APIGatewayAuthorizerResultContext = {};
+    if (error instanceof Error) {
+      context.message = error.message;
+    }
+    if (error instanceof CustomError) {
+      context.statusCode = error.statusCode;
+    }
     return {
       principalId: 'user',
       policyDocument: {
@@ -46,9 +59,7 @@ export const handler = async (
           },
         ],
       },
-      context: {
-        message: (error as Error).message,
-      },
+      context,
     };
   }
 };
