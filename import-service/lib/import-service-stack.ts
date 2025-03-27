@@ -89,12 +89,25 @@ export class ImportServiceStack extends cdk.Stack {
     const api = new apigateway.RestApi(this, 'ImportServiceApi', {
       restApiName: 'Import Service API Service',
       description: 'This is Import Service API Service Gateway',
-      defaultCorsPreflightOptions: {
-        allowOrigins: ['*'],
-        allowMethods: ['GET', 'POST', 'PUT', 'DELETE'],
-        allowHeaders: ['*'],
-      },
     });
+
+    const basicAuthorizerHandler = lambda.Function.fromFunctionAttributes(
+      this,
+      'BasicAuthorizer',
+      {
+        functionArn: cdk.Fn.importValue('BasicAuthorizerArn'),
+        sameEnvironment: true,
+      }
+    );
+
+    const authorizer = new apigateway.TokenAuthorizer(
+      this,
+      'BasicTokenAuthorizer',
+      {
+        handler: basicAuthorizerHandler,
+        identitySource: 'method.request.header.Authorization',
+      }
+    );
 
     const importProducts = api.root.addResource('import');
     importProducts.addMethod(
@@ -104,8 +117,22 @@ export class ImportServiceStack extends cdk.Stack {
         requestParameters: {
           'method.request.querystring.name': true,
         },
+        // authorizationType: apigateway.AuthorizationType.CUSTOM,
+        authorizer,
       }
     );
+    importProducts.addCorsPreflight({
+      allowOrigins: apigateway.Cors.ALL_ORIGINS,
+      allowMethods: apigateway.Cors.ALL_METHODS,
+      allowHeaders: ['*'],
+      allowCredentials: true,
+    });
+
+    new cdk.CfnOutput(this, 'ImportServiceApiArn', {
+      value: api.arnForExecuteApi(),
+      exportName: 'ImportServiceApiArn',
+      description: 'Import Service API ARN',
+    });
 
     new cdk.CfnOutput(this, 'ImportServiceApiUrl', {
       value: api.url,
