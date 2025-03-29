@@ -117,7 +117,10 @@ export class ProductServiceStack extends cdk.Stack {
     });
 
     new sns.Subscription(this, 'failedSubscription', {
-      topic: createProductTopic,
+      topic: new sns.Topic(this, 'failedCreateProductTopic', {
+        topicName: 'failedCreateProductTopic',
+        displayName: 'Failed Create Product Topic',
+      }),
       endpoint: ssm.StringParameter.valueForStringParameter(
         this,
         '/learn-aws-course/sns/failed-endpoint'
